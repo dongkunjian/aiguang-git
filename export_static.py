@@ -69,9 +69,18 @@ def export(cfg, store):
         # 紧凑输出（无多余空格），配合 gzip 体积更小
         json.dump(feed, f, ensure_ascii=False, separators=(",", ":"))
 
-    cn = {r["full_name"]: r["cn_text"]
-          for r in store.conn.execute("SELECT full_name, cn_text FROM interpret")}
+    # 合并策略：仓库里已入库的 cn.json 是历史翻译基线（Actions 直传部署不回写 git，
+    # 新翻译都落在 cache 的 db 里）。基线保底 + db 覆盖，保证解读只增不减。
     cn_path = os.path.join(out_dir, "cn.json")
+    cn = {}
+    if os.path.exists(cn_path):
+        try:
+            with open(cn_path, encoding="utf-8") as f:
+                cn = json.load(f)
+        except Exception:
+            cn = {}
+    for r in store.conn.execute("SELECT full_name, cn_text FROM interpret"):
+        cn[r["full_name"]] = r["cn_text"]
     with open(cn_path, "w", encoding="utf-8") as f:
         json.dump(cn, f, ensure_ascii=False, separators=(",", ":"))
 
