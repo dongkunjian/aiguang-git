@@ -1,0 +1,51 @@
+name: 抓取并部署
+
+# 抓取是重活（I/O + 解析），放在 GitHub Actions 跑：免费、完全不依赖本地电脑。
+# 每天定时：抓五路货源 → 导出 feed.json → 用 wrangler 直接部署到 Cloudflare Pages。
+on:
+  schedule:
+    - cron: '0 22 * * *'   # 每天 22:00 UTC = 次日 06:00 北京时间
+  workflow_dispatch: {}     # 也支持在 Actions 页面（或站点「抓新货」按钮）手动触发
+
+permissions:
+  contents: read
+
+jobs:
+  fetch-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # SQLite 库存放「今日星增量」基线，跨次运行复用（缓存 7 天内有效，正好每天跑）
+      - name: 恢复数据库缓存
+        uses: actions/cache@v4
+        with:
+          path: data/aiguang.db
+          key: aiguang-db-${{ github.run_id }}
+          restore-keys: |
+            aiguang-db-
+
+      - name: 安装依赖
+        run: pip install requests beautifulsoup4
+
+      - name: 抓取入库（五路货源）
+        env:
+          # GitHub 只读接口直接用 Actions 自带令牌（每小时 1000 次限额），无需另存密钥
+          AIGUANG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AIGUANG_GITEE_TOKEN: ${{ secrets.AIGUANG_GITEE_TOKEN }}
+          AIGUANG_MYMEMORY_EMAIL: ${{ secrets.AIGUANG_MYMEMORY_EMAIL }}
+        run: python run_fetch.py
+
+      - name: 导出静态数据（feed.json + cn.json）
+        run: python export_static.py
+
+      - name: 部署到 Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy web --project-name=aiguang-git --branch=main
