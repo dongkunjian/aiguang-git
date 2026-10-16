@@ -1,0 +1,31 @@
+# 爱逛GIT：应用 + Cloudflare 隧道，一台云主机跑起来（Oracle Always Free ARM 等均可）
+#
+# 设计要点：
+#   1) 隧道是**出站**连接，所以不用开放 80/443，origin 不暴露在公网 —— 只留 SSH 给运维
+#   2) cloudflared 用 host 网络，隧道 config.yml 里 http://127.0.0.1:8321 原样可用，
+#      Cloudflare 控制台与 DNS 都用不着改
+#   3) app 端口只绑 127.0.0.1，外网扫不到
+#   4) ./data 是持久卷：SQLite 库、头像缓存、每日备份都在里面，容器重建不丢数据
+#   5) 隧道凭据放在 ./cf-creds/（含密钥，已被 .gitignore 排除，需手动 scp 上去）
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8321:8321"
+    environment:
+      AIGUANG_DATA_DIR: /data
+      AIGUANG_GITHUB_TOKEN: ${AIGUANG_GITHUB_TOKEN}
+      AIGUANG_GITEE_TOKEN: ${AIGUANG_GITEE_TOKEN}
+      AIGUANG_ACCESS_CODE: ${AIGUANG_ACCESS_CODE}
+      AIGUANG_MYMEMORY_EMAIL: ${AIGUANG_MYMEMORY_EMAIL}
+    volumes:
+      - ./data:/data
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./cf-creds:/etc/cloudflared:ro
+    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
