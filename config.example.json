@@ -1,0 +1,16 @@
+{
+  "github_token": "",
+  "github_username": "dongkunjian",
+  "topics": ["llm", "ai-agents", "quantitative-finance", "productivity", "python", "indie-hacker"],
+  "bosses": [],
+  "languages": ["Python", "JavaScript", "TypeScript", "Go", "Rust"],
+  "trending_since": "daily",
+  "min_stars": 50,
+  "host": "0.0.0.0",
+  "port": 8321,
+  "access_code": "",
+  "mymemory_email": "",
+  "gh_mirror": "https://bgithub.xyz",
+  "gh_proxy": "https://ghfast.top",
+  "gitee_token": ""
+}
