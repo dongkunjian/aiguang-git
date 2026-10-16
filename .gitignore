@@ -1,0 +1,19 @@
+# 数据与缓存
+data/
+__pycache__/
+*.pyc
+.venv/
+
+# 密钥配置：含 GitHub / Gitee 令牌，绝不入库
+config.json
+
+# 云主机部署密钥（令牌 + 隧道 token），绝不入库
+.env
+
+# 云主机上的隧道凭据目录（含隧道私钥），绝不入库
+cf-creds/
+
+# Cloudflare 隧道凭据（start.ps1 看门狗脚本无密钥，入库）
+.cloudflared/*
+!.cloudflared/start.ps1
+*.log
