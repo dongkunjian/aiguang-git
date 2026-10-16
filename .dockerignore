@@ -1,0 +1,17 @@
+.git
+.gitignore
+
+# 密钥与本机配置：绝不能打进镜像（云端用环境变量注入）
+config.json
+.env
+
+# 运行期数据：容器里用持久卷挂到 /data，不随镜像分发
+data
+.cloudflared
+
+# 与运行无关
+多智能体协同规则
+__pycache__
+*.pyc
+.venv
+venv
