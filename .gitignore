@@ -1,5 +1,5 @@
-# 数据与缓存
-data/
+# 数据与缓存（仅忽略根目录的库/头像/备份；web/data 是给 Pages 部署的静态数据，需要入库）
+/data/
 __pycache__/
 *.pyc
 .venv/
