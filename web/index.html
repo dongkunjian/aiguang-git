@@ -29,9 +29,9 @@ header{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.92);backdro
 #refresh{font-size:14px;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--sub);position:relative;flex:0 0 auto}
 #newBadge{display:none;position:absolute;top:-7px;right:-9px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:1px 6px;line-height:1.5;box-shadow:0 1px 3px rgba(0,0,0,.2)}
 #meta{font-size:11px;color:var(--sub);width:100%}
-main{margin:0 auto;padding:12px 10px 60px;max-width:1400px}
-/* 自适应栅格：手机单列 / iPad 双列 / 大屏三列，横向铺满不浪费 */
-#flow{width:100%;margin:0;display:grid;grid-template-columns:1fr;gap:10px;align-items:start}
+main{margin:0 auto;padding:12px 10px 60px;max-width:1600px}
+/* 全端单列纵向瀑布流：手机/平板/电脑统一一张卡一行，一直往下拉 */
+#flow{width:100%;margin:0;display:flex;flex-direction:column;gap:10px}
 /* 卡片纵向结构：头部（头像+名字/owner）横排一行，内容全宽铺在下 —— 不再有左侧栏留白 */
 .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;position:relative;display:flex;flex-direction:column}
 .head{display:flex;align-items:center;gap:10px;margin-bottom:9px;padding-right:36px}
@@ -62,9 +62,13 @@ main{margin:0 auto;padding:12px 10px 60px;max-width:1400px}
 .lnks a{color:var(--sub);margin-left:4px;text-decoration:underline;padding:8px 8px;display:inline-block}
 .lnks a.cur{color:var(--acc);font-weight:700}
 #sentinel{height:60px;display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:13px;text-align:center;padding:0 20px}
-/* 栅格断点：≥660 双列（iPad 竖屏起）、≥1280 三列（iPad 横屏/桌面） */
-@media(min-width:660px){#flow{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(min-width:1280px){#flow{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* 宽屏（平板横屏/电脑）：卡片转横排 —— 左侧头像+名字固定栏，右侧内容铺满，充分利用横向空间 */
+@media(min-width:900px){
+  .card{flex-direction:row;gap:18px;align-items:flex-start;padding:16px 18px}
+  .head{flex:0 0 250px;flex-direction:column;align-items:flex-start;gap:8px;margin-bottom:0;padding-right:0}
+  .head img{width:56px;height:56px;border-radius:13px}
+  .main{flex:1}
+}
 /* iPad 竖屏及以下：控件收成独立一行、可横滑，不再折成多行吃屏幕 */
 @media(max-width:1023px){
   .tools{flex:1 1 100%;order:9;justify-content:flex-start;padding:8px 0 2px}
@@ -293,10 +297,16 @@ async function autoLink(m){
   }
 }
 
+/* 数据缓存：localStorage 存上一份 feed，打开即秒铺；后台拉新，版本变了才重铺（保持滚动位置） */
+const FEED_KEY='ag_feed_v1';
+function loadCached(){try{const d=JSON.parse(localStorage.getItem(FEED_KEY));if(d&&d.items&&d.items.length){S.all=d.items;S.meta=d.meta||{};return true}}catch(e){}return false}
 async function loadFeed(){
   const r=await fetch('data/feed.json',{cache:'no-store'});
   const d=await r.json();
+  const oldFetch=S.meta&&S.meta.last_fetch;
   S.all=d.items||[];S.meta=d.meta||{};
+  try{localStorage.setItem(FEED_KEY,JSON.stringify(d))}catch(e){}
+  return !oldFetch||oldFetch!==(S.meta.last_fetch||'');
 }
 function metaText(){
   const m=S.meta||{};
@@ -326,11 +336,14 @@ $('#refresh').onclick=async()=>{
 /* 下拉到底自动续铺 */
 new IntersectionObserver(es=>{if(es[0].isIntersecting)renderPage()},{rootMargin:'400px'}).observe($('#sentinel'));
 
-/* 启动 */
+/* 启动：有缓存先秒开，再后台拉新 */
 (async()=>{
   applyFs();
-  try{await loadFeed()}catch(e){$('#sentinel').textContent='数据加载失败，请刷新重试';return}
-  metaText();reset();
+  const had=loadCached();
+  if(had){metaText();reset()}
+  let changed=false;
+  try{changed=await loadFeed()}catch(e){if(!had){$('#sentinel').textContent='数据加载失败，请刷新重试';return}}
+  if(!had||changed){const y=window.scrollY;metaText();reset();if(had)window.scrollTo(0,y)}
 })();
 </script>
 </body>
