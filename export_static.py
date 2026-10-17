@@ -69,6 +69,14 @@ def export(cfg, store):
         # 紧凑输出（无多余空格），配合 gzip 体积更小
         json.dump(feed, f, ensure_ascii=False, separators=(",", ":"))
 
+    # Skill 板块：sources 带 "skill:" 前缀的条目单独成包，前端 /skills.html 消费
+    skill_items = [d for d in feed["items"]
+                   if any(s.startswith("skill:") for s in d["sources"])]
+    skill_path = os.path.join(out_dir, "skills.json")
+    with open(skill_path, "w", encoding="utf-8") as f:
+        json.dump({"meta": {**feed["meta"], "total": len(skill_items)},
+                   "items": skill_items}, f, ensure_ascii=False, separators=(",", ":"))
+
     # 合并策略：仓库里已入库的 cn.json 是历史翻译基线（Actions 直传部署不回写 git，
     # 新翻译都落在 cache 的 db 里）。基线保底 + db 覆盖，保证解读只增不减。
     cn_path = os.path.join(out_dir, "cn.json")
@@ -84,15 +92,16 @@ def export(cfg, store):
     with open(cn_path, "w", encoding="utf-8") as f:
         json.dump(cn, f, ensure_ascii=False, separators=(",", ":"))
 
-    return feed_path, cn_path, feed["meta"], len(cn)
+    return feed_path, cn_path, feed["meta"], len(cn), len(skill_items)
 
 
 def main():
     cfg = load_config()
     store = Store(cfg["db_path"])
-    feed_path, cn_path, meta, n_cn = export(cfg, store)
+    feed_path, cn_path, meta, n_cn, n_skill = export(cfg, store)
     print(f"===== 静态导出 {meta['generated_at']} =====")
     print(f">>> feed.json  {meta['total']} 个项目 · {os.path.getsize(feed_path)/1024:.0f} KB")
+    print(f">>> skills.json {n_skill} 个 Skill")
     print(f">>> cn.json    {n_cn} 条解读 · {os.path.getsize(cn_path)/1024:.0f} KB")
     print(f">>> 上次抓货 {meta['last_fetch']}")
 
