@@ -274,9 +274,7 @@ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
 let qt;$('#q').oninput=e=>{$('#qClr').style.display=e.target.value?'block':'none';clearTimeout(qt);qt=setTimeout(()=>{S.q=e.target.value.trim();reset()},350)};
 $('#qClr').onclick=()=>{$('#q').value='';$('#qClr').style.display='none';S.q='';reset()};
 $('#favBtn').onclick=()=>{S.fav=S.fav?0:1;$('#favBtn').classList.toggle('on',!!S.fav);reset()};
-function setSrc(v){S.src=S.src===v?'':v;$('#ghBtn').classList.toggle('on',S.src==='GitHub');$('#srcBtn').classList.toggle('on',S.src==='Gitee');reset()}
-$('#ghBtn').onclick=()=>setSrc('GitHub');
-$('#srcBtn').onclick=()=>setSrc('Gitee');
+function setSrc(v){S.src=S.src===v?'':v;reset()}
 $('#homeBtn').onclick=()=>{if(S.meta)localStorage.ag_total_skill=S.meta.total;location.reload()};
 
 /* 新货红点：本次库内总数比上次浏览多时，抓新货按钮右上角亮 +N */
