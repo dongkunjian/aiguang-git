@@ -6,7 +6,7 @@ import sys
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
-from fetch import bosses, gitee, stars, topics, trending
+from fetch import bosses, gitee, skills, stars, topics, trending
 from fetch.common import load_config
 from store import Store, now_str
 
@@ -16,6 +16,7 @@ PIPELINE = [
     ("star 相似推荐", stars),
     ("大佬动态", bosses),
     ("Gitee 好物", gitee),
+    ("Skill 好物", skills),
 ]
 
 
