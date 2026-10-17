@@ -37,11 +37,29 @@ def run_pipeline(cfg, store):
     return total_new
 
 
+def batch_interpret(cfg, store, limit=30):
+    """每日为还没有中文解读的项目预生成翻译（限量，优先热项目；失败不缓存，明日重试）"""
+    from fetch import interpret as interp_mod
+    rows = store.conn.execute(
+        "SELECT full_name FROM items WHERE full_name NOT IN (SELECT full_name FROM interpret)"
+        " ORDER BY stars DESC LIMIT ?", (limit,)).fetchall()
+    n = 0
+    for r in rows:
+        try:
+            interp_mod.interpret(cfg, store, r["full_name"])
+            n += 1
+        except Exception as e:
+            print(f"[interpret] {r['full_name']} 失败: {e}")
+    return n
+
+
 def main():
     cfg = load_config()
     store = Store(cfg["db_path"])
     print(f"===== 爱逛GIT 抓取 {now_str()} =====\n")
     total_new = run_pipeline(cfg, store)
+    n_tr = batch_interpret(cfg, store)
+    print(f">>> 预翻译: 本次新译 {n_tr} 个项目解读\n")
     print(f"===== 完成：库内累计 {store.count()} 个项目，本次新增 {total_new} =====")
 
 
