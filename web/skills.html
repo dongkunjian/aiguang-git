@@ -169,7 +169,14 @@ function loadCn(){
 function showCn(el,text){const b=el.querySelector('.cnbody');if(!b)return;b.textContent=text;b.style.display='block'}
 function maybeCn(el){
   if(el.dataset.cnReq)return;el.dataset.cnReq='1';
-  loadCn().then(()=>{const t=S.cn[el.dataset.fn];if(t)showCn(el,t)});
+  loadCn().then(()=>{
+    const t=S.cn[el.dataset.fn];
+    if(t){showCn(el,t);return}
+    const d=el.querySelector('.desc');
+    const txt=d?d.textContent.trim():'';
+    const b=el.querySelector('.cnbody');
+    if(b&&txt&&txt!=='（暂无简介）'){b.textContent='【原文简介】（中文解读后台整理中，改天再来即是译文）\n'+txt;b.style.display='block'}
+  });
 }
 const cnIO=new IntersectionObserver(es=>{es.forEach(e=>{
   if(e.isIntersecting){maybeCn(e.target);cnIO.unobserve(e.target)}
